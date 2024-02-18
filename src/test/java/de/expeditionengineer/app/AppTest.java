@@ -1,7 +1,8 @@
 package de.expeditionengineer.app;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertEquals; // Add this line
+import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -10,6 +11,7 @@ import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -18,13 +20,10 @@ import org.junit.Test;
 public class AppTest 
 {
     public int numberOfRequests = 0;
-    /**
-     * Rigorous Test :-)
-     */
-    @Test
-    public void apiIsCalled()
-    {
-        MyHandler handler = new MyHandler();
+    private MyHandler handler;
+    @Before
+    public void setUp() {
+        handler = new MyHandler();
         try {
             HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
             
@@ -34,17 +33,36 @@ public class AppTest
             } catch (Exception e) {
             System.out.println("Coudlnt start the HTTP-Server. Maybe port 8000 is already in use?");
         }
+    }
+
+    @Test
+    public void apiIsCalled()
+    {
+
         CurrencyConverter converterObj = new CurrencyConverter();
         String reportIfDataFetchWasSuccessful = converterObj.loadExchangeData(true);
         assertEquals(1, handler.getCount());
         assertTrue(reportIfDataFetchWasSuccessful.equals("success"));
     }
+
+    @Test
+    public void testIfRightValuesAreInExchangeList() {
+        CurrencyConverter converterObj = new CurrencyConverter();
+        converterObj.loadExchangeData(true);
+        assertEquals(1.0, converterObj.getRate("USD"), 0.0);
+        assertEquals(0.9013, converterObj.getRate("EUR"), 0.0);
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            converterObj.getRate("ABC");
+        });
+    }
+
     static class MyHandler implements HttpHandler {
         private int count = 0; // counter variable
     
         @Override
         public void handle(HttpExchange t) throws IOException {
-            count++; // increment the counter each time handle is called
+            count++;
             System.out.println("Handle method called " + count + " times");
     
             String response = "{\n" + //
